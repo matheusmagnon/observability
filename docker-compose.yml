@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # Observabilidade
+  tempo:
+    image: grafana/tempo:latest
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./config/tempo.yaml:/etc/tempo.yaml
+    ports:
+      - "3200:3200" # Tempo
+    networks:
+      - observability
+      - default
+
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - tempo
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - observability
+      - default
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - observability
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-config.yaml"]
+    volumes:
+      - ./config/otel-config.yaml:/etc/otel-config.yaml
+    ports:
+      - "8888:8888" # Metrics
+      - "8889:8889" # Prometheus metrics
+      - "13133:13133" # Health check
+      - "4318:4318" # OTLP HTTP
+      - "4317:4317" # Adiciona porta gRPC
+    depends_on:
+      - tempo
+      - prometheus
+    networks:
+      - observability
+
+volumes:
+  grafana-storage:
+
+networks:
+  observability:
+    driver: bridge
