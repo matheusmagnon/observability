@@ -1,27 +1,26 @@
-receivers:
-  otlp:
-    protocols:
-      http:
-      grpc:       # Adiciona gRPC
-        endpoint: 0.0.0.0:4317
+metrics:
+  global:
+    scrape_interval: 15s
+  configs:
+  - name: default
+    scrape_configs:
+    - job_name: 'otel-collector'
+      static_configs:
+      - targets: ['otel-collector:8889']
 
-exporters:
-  debug:  # Substitui o logging
-    verbosity: detailed
-  
-  prometheus:
-    endpoint: "0.0.0.0:8889"
-  
-  otlphttp/tempo:
-    endpoint: "http://tempo:4318"
-    tls:
-      insecure: true
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      exporters: [debug, otlphttp/tempo]
-    metrics:
-      receivers: [otlp]
-      exporters: [debug, prometheus]
+traces:
+  configs:
+  - name: default
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+    service_graphs:  # Campo corrigido
+      enabled: true   # Ativação obrigatória
+    remote_write:
+      - endpoint: tempo:4317
+        insecure: true
+    batch:
+      timeout: 5s
+      send_batch_size: 100

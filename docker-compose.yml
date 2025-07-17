@@ -33,6 +33,9 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"   
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -41,8 +44,8 @@ services:
       - observability
 
   otel-collector:
-    image: otel/opentelemetry-collector:latest
-    command: ["--config=/etc/otel-config.yaml"]
+    image: grafana/agent:latest
+    command: ["-config.expand-env", "-config.file=/etc/otel-config.yaml"]
     volumes:
       - ./config/otel-config.yaml:/etc/otel-config.yaml
     ports:
